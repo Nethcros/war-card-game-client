@@ -1,31 +1,14 @@
 // src/pages/GamePage.tsx
 
-import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useWarGame } from '../hooks/useWarGame';
-import { setApiToken, setUnauthorizedHandler } from '../services/api';
 import { getCardDisplay, getCardSuit } from '../services/cardUtils';
 
 export default function GamePage() {
-  const { logout, user, token } = useAuth();
+  const { logout, user } = useAuth();
   const { state, startGame, flipCard, saveGame, gameTimestamp } = useWarGame();
-  const navigate = useNavigate();
 
-  // Sync token cache + unauthorized handler with router context
-  useEffect(() => {
-    setApiToken(token);
-  }, [token]);
-
-  useEffect(() => {
-    setUnauthorizedHandler(() => {
-      logout();
-      navigate('/login', { replace: true });
-    });
-    return () => setUnauthorizedHandler(() => {});
-  }, [logout, navigate]);
-
-  // Flip is a user event, so save is triggered from the handler, not an effect.
   const handleFlip = async () => {
     const nextState = flipCard();
     if (nextState.gameOver) {

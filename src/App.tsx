@@ -1,11 +1,32 @@
 // src/App.tsx
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './hooks/useAuth';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './hooks/useAuth';
+import { setApiToken, setUnauthorizedHandler } from './services/api';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import GamePage from './pages/GamePage';
 import GamelogPage from './pages/GamelogPage';
+
+function AuthSync() {
+  const { logout, token } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setApiToken(token);
+  }, [token]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      logout();
+      navigate('/login', { replace: true });
+    });
+    return () => setUnauthorizedHandler(() => {});
+  }, [logout, navigate]);
+
+  return null;
+}
 
 function NotFound() {
   return (
@@ -21,6 +42,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <AuthSync />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
