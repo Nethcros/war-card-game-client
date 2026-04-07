@@ -1,29 +1,53 @@
-import axios from 'axios';
+// src/services/api.ts
+
+import axios, { AxiosError } from 'axios';
 import type { AuthResponse, GameRecord } from '../types';
 
-// Base URL — during dev, Vite proxy forwards /api to your backend
 const api = axios.create({
   baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Interceptor: attach JWT to every outgoing request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+// Token cache — avoids localStorage reads on every request.
+// Synced manually via setApiToken.
+let cachedToken: string | null = localStorage.getItem('token');
+
+export function setApiToken(token: string | null) {
+  cachedToken = token;
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    localStorage.setItem('token', token);
+  } else {
+    localStorage.removeItem('token');
+  }
+}
+
+api.interceptors.request.use((config) => {
+  if (cachedToken) {
+    config.headers.Authorization = `Bearer ${cachedToken}`;
   }
   return config;
 });
 
-// Interceptor: auto-redirect to login on 401/403
+// Store a navigate function injected from the router context.
+// Avoids window.location reload on 401.
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler;
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('token');
+    if (
+      error instanceof AxiosError &&
+      (error.response?.status === 401 || error.response?.status === 403)
+    ) {
+      setApiToken(null);
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (onUnauthorized) {
+        onUnauthorized();
+      }
     }
     return Promise.reject(error);
   },

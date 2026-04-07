@@ -1,9 +1,21 @@
+// src/App.tsx
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import GamePage from './pages/GamePage';
 import GamelogPage from './pages/GamelogPage';
+
+function NotFound() {
+  return (
+    <div className="login-container">
+      <h1>404</h1>
+      <p>Page not found.</p>
+      <a href="/login">Go to login</a>
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -27,7 +39,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
